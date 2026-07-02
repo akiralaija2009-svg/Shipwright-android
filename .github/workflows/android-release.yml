@@ -13,7 +13,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Esto evita que busque etiquetas específicas y traiga todo el historial
+          fetch-depth: 0
+          submodules: 'recursive'  # <--- ESTA ES LA LÍNEA MÁGICA
 
       - name: Set up JDK
         uses: actions/setup-java@v3
