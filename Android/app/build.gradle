@@ -25,12 +25,7 @@ android {
     }
     signingConfigs {
         release {
-            if (project.hasProperty('storeFile')) {
-                storeFile file(storeFile)
-                storePassword project.storePassword
-                keyAlias project.keyAlias
-                keyPassword project.keyPassword
-            }
+            // Se eliminó la firma secreta para permitir compilación local
         }
     }
     buildTypes {
@@ -47,11 +42,11 @@ android {
             minifyEnabled false
             debuggable false
             jniDebuggable false
-            signingConfig signingConfigs.release
+            signingConfig signingConfigs.debug
             externalNativeBuild {
                 cmake {
                     arguments "-DSDL_SHARED=ON", "-DANDROID_STL=c++_static", "-DHAVE_LD_VERSION_SCRIPT=OFF",'-DUSE_OPENGLES=ON', "-DBUILD_REMOTE_CONTROL=1"
-                    abiFilters 'arm64-v8a'
+                    abiFilters 'armeabi-v7a', 'arm64-v8a'
                 }
             }
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
