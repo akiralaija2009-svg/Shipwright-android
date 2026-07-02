@@ -21,23 +21,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build APK
-        run: |
-          # Esto encuentra la carpeta android sin importar dónde esté
-          RUTA=$(find . -type d -name "android" -o -name "Android" | head -n 1)
-          echo "Entrando a: $RUTA"
-          cd "$RUTA"
-          ./gradlew assembleRelease
-
       - name: Fetch annotated tag
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
           git fetch origin "+refs/tags/${{ github.ref_name }}:refs/tags/${{ github.ref_name }}"
-
-      - name: Write local.properties
-        run: |
-          echo "sdk.dir=${ANDROID_SDK_ROOT}" > Android/local.properties
-          echo "ndk.dir=${ANDROID_NDK_HOME}" >> Android/local.properties
 
       - name: Install host build dependencies
         run: |
@@ -58,11 +45,15 @@ jobs:
         env:
           GIT_TAG: ${{ github.ref_name }}
         run: |
-          cd Android && ./gradlew assembleRelease \
-            -PstoreFile=release.jks \
-            -PstorePassword=${{ secrets.SIGNING_KEY_PASSWORD }} \
-            -PkeyAlias=${{ secrets.SIGNING_KEY_ALIAS }} \
-            -PkeyPassword=${{ secrets.SIGNING_KEY_PASSWORD }}
+          RUTA=$(find . -type d -name "android" -o -name "Android" | head -n 1)
+          cd "$RUTA"
+          rm -f local.properties
+          ./gradlew assembleRelease \
+          -PstoreFile=release.jks \
+          -PstorePassword=${{ secrets.SIGNING_KEY_PASSWORD }} \
+          -PkeyAlias=${{ secrets.SIGNING_KEY_ALIAS }} \
+          -PkeyPassword=${{ secrets.SIGNING_KEY_PASSWORD }}
+          
 
       - name: Rename APK
         run: |
