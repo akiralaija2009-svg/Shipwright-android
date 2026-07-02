@@ -45,30 +45,15 @@ jobs:
         env:
           GIT_TAG: ${{ github.ref_name }}
         run: |
-          echo "Buscando la ubicación de gradlew..."
-          # Buscamos dónde está el archivo gradlew
-          GRADLEW_PATH=$(find . -name "gradlew" -type f | head -n 1)
-          
-          if [ -z "$GRADLEW_PATH" ]; then
-            echo "Error: No se encontró el archivo gradlew en el repositorio."
-            exit 1
-          fi
-          
-          # Obtenemos la carpeta donde está gradlew
-          TARGET_DIR=$(dirname "$GRADLEW_PATH")
-          echo "Entrando a la carpeta: $TARGET_DIR"
-          cd "$TARGET_DIR"
-          
-          # Limpiamos configuraciones locales
+          chmod +x gradlew || find . -name "gradlew" -exec chmod +x {} \;
+          GRADLEW_DIR=$(find . -name "gradlew" -exec dirname {} \; | head -n 1)
+          cd "$GRADLEW_DIR"
           rm -f local.properties
-          
-          # Compilamos
           ./gradlew assembleRelease \
           -PstoreFile=release.jks \
           -PstorePassword=${{ secrets.SIGNING_KEY_PASSWORD }} \
           -PkeyAlias=${{ secrets.SIGNING_KEY_ALIAS }} \
-          -PkeyPassword=${{ secrets.SIGNING_KEY_PASSWORD }}
-          
+          -PkeyPassword=${{ secrets.SIGNING_KEY_PASSWORD }} 
         
       - name: Rename APK
         run: |
