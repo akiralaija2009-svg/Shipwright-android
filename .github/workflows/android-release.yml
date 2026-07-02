@@ -3,24 +3,28 @@ name: Android Release Build
 on:
   workflow_dispatch:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - '*'
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
-    container:
-      image: djvdw7f2ro/android-builder-soh:v1.0.4
-    permissions:
-      id-token: write
-      attestations: write
-      contents: write
-
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build APK
+        run: |
+          cd android
+          ./gradlew assembleRelease
 
       - name: Fetch annotated tag
         run: |
