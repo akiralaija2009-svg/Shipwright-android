@@ -23,8 +23,10 @@ jobs:
 
       - name: Build APK
         run: |
-          cd android
+          ls -R
+          cd android || cd Android || echo "No encontré la carpeta android"
           ./gradlew assembleRelease
+          
 
       - name: Fetch annotated tag
         run: |
