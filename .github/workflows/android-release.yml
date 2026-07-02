@@ -45,7 +45,14 @@ jobs:
         env:
           GIT_TAG: ${{ github.ref_name }}
         run: |
-          RUTA=$(find . -type d -name "android" -o -name "Android" | head -n 1)
+          echo "--- LISTADO DE CARPETAS ---"
+          find . -maxdepth 3 -type d
+          echo "---------------------------"
+          
+          # Buscamos dónde está realmente la carpeta que contiene el archivo 'gradlew'
+          RUTA=$(find . -name "gradlew" -exec dirname {} \;)
+          echo "La ruta encontrada es: $RUTA"
+          
           cd "$RUTA"
           rm -f local.properties
           ./gradlew assembleRelease \
@@ -53,8 +60,7 @@ jobs:
           -PstorePassword=${{ secrets.SIGNING_KEY_PASSWORD }} \
           -PkeyAlias=${{ secrets.SIGNING_KEY_ALIAS }} \
           -PkeyPassword=${{ secrets.SIGNING_KEY_PASSWORD }}
-          
-
+        
       - name: Rename APK
         run: |
           APK=$(find Android/app/build/outputs/apk/release -name 'soh_release_*.apk' | head -1)
