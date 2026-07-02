@@ -23,11 +23,10 @@ jobs:
 
       - name: Build APK
         run: |
-          echo "Listado de archivos en el servidor:"
-          ls -R
-          echo "Intentando localizar la carpeta de compilación..."
-          # Buscamos la carpeta, sea 'android' o 'Android'
-          cd $(find . -maxdepth 2 -type d \( -name "android" -o -name "Android" \) | head -n 1)
+          # Esto encuentra la carpeta android sin importar dónde esté
+          RUTA=$(find . -type d -name "android" -o -name "Android" | head -n 1)
+          echo "Entrando a: $RUTA"
+          cd "$RUTA"
           ./gradlew assembleRelease
 
       - name: Fetch annotated tag
