@@ -14,7 +14,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          submodules: 'recursive'  # <--- ESTA ES LA LÍNEA MÁGICA
+          submodules: 'recursive'
 
       - name: Set up JDK
         uses: actions/setup-java@v3
@@ -44,27 +44,22 @@ jobs:
 
       - name: Build release APK
         env:
-        GIT_TAG: ${{ github.ref_name }}
+          GIT_TAG: ${{ github.ref_name }}
         run: |
-         GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
-         GRADLEW_DIR=$(dirname "$GRADLEW_PATH")
-         cd "$GRADLEW_DIR"
-         chmod +x gradlew
-         ./gradlew assembleRelease \
-         -PstoreFile=release.jks \
-         -PstorePassword=${{ secrets.SIGNING_KEY_PASSWORD }} \
-         -PkeyAlias=${{ secrets.SIGNING_KEY_ALIAS }} \
-         -PkeyPassword=${{ secrets.SIGNING_KEY_PASSWORD }}
-         cd $GITHUB_WORKSPACE
+          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          GRADLEW_DIR=$(dirname "$GRADLEW_PATH")
+          cd "$GRADLEW_DIR"
+          chmod +x gradlew
+          ./gradlew assembleRelease \
+          -PstoreFile=release.jks \
+          -PstorePassword=${{ secrets.SIGNING_KEY_PASSWORD }} \
+          -PkeyAlias=${{ secrets.SIGNING_KEY_ALIAS }} \
+          -PkeyPassword=${{ secrets.SIGNING_KEY_PASSWORD }}
+          cd $GITHUB_WORKSPACE
         
       - name: Rename APK
         run: |
-         APK=$(find Android/app/build/outputs/apk/release -name 'soh_release_*.apk' | head -n 1)
-         mv "$APK" "soh-${{ github.ref_name }}.apk"
-        
-      - name: Rename APK
-        run: |
-          APK=$(find Android/app/build/outputs/apk/release -name 'soh_release_*.apk' | head -1)
+          APK=$(find Android/app/build/outputs/apk/release -name 'soh_release_*.apk' | head -n 1)
           mv "$APK" "soh-${{ github.ref_name }}.apk"
 
       - name: Compute SHA256
@@ -103,3 +98,4 @@ jobs:
             "soh-${TAG}.apk" \
             --title "${TAG}" \
             --notes-file /tmp/release-notes.md
+            
