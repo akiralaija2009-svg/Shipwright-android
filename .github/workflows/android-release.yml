@@ -10,9 +10,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           submodules: 'recursive'
 
       - name: Set up JDK
@@ -21,22 +22,29 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build release APK
+      - name: Build Android Release
         env:
           SIGNING_KEYSTORE_B64: ${{ secrets.SIGNING_KEYSTORE_B64 }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
         run: |
-          # 1. Preparar keystore
+          # 1. Buscar automáticamente la carpeta donde vive gradlew
+          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          if [ -z "$GRADLEW_PATH" ]; then
+            echo "¡ERROR! No se encontró el archivo gradlew en el repositorio."
+            exit 1
+          fi
+          
+          PROJECT_DIR=$(dirname "$GRADLEW_PATH")
+          echo "Compilando en: $PROJECT_DIR"
+          cd "$PROJECT_DIR"
+          
+          # 2. Preparar el Keystore
           echo "$SIGNING_KEYSTORE_B64" | base64 -d > release.jks
           
-          # 2. Configuración de permisos
+          # 3. Compilación limpia y controlada
+          # Se desactiva el modo paralelo para ahorrar RAM y se fuerza un limite de 2GB
           chmod +x gradlew
-          
-          # 3. Compilación limpia y secuencial (sin paralelismo para ahorrar RAM)
-          # -Porg.gradle.parallel=false : Evita picos de memoria.
-          # --no-daemon : Obliga a iniciar un proceso nuevo, más estable.
-          # -Xmx2g : Límite estricto de 2GB de RAM para Java.
           ./gradlew clean assembleRelease \
             -Porg.gradle.parallel=false \
             -Porg.gradle.jvmargs="-Xmx2g -XX:MaxMetaspaceSize=512m" \
@@ -46,9 +54,10 @@ jobs:
             -PkeyAlias=$SIGNING_KEY_ALIAS \
             -PkeyPassword=$SIGNING_KEY_PASSWORD
 
-      - name: Upload APK
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
-          path: Android/app/build/outputs/apk/release/*.apk
+          # Buscamos el APK en cualquier subcarpeta de build/outputs
+          path: "**/build/outputs/apk/release/*.apk"
           
