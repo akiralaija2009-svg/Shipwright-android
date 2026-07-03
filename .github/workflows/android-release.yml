@@ -10,7 +10,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           submodules: 'recursive'
 
@@ -20,32 +21,28 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # Configuración de caché para acelerar compilaciones futuras
-      - name: Cache Gradle
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-
       - name: Build release APK
         env:
           SIGNING_KEYSTORE_B64: ${{ secrets.SIGNING_KEYSTORE_B64 }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
         run: |
-          # Decodificar keystore solo si existe el secreto
-          if [ -n "$SIGNING_KEYSTORE_B64" ]; then
-            echo "$SIGNING_KEYSTORE_B64" | base64 -d > release.jks
-          fi
+          # 1. Decodificar keystore
+          echo "$SIGNING_KEYSTORE_B64" | base64 -d > release.jks
           
+          # 2. Compilar con límite de memoria estricto
+          # -Xmx3g significa que Java no pasará de 3GB de RAM.
           chmod +x gradlew
-          # Limitamos la memoria de la JVM para evitar el error de "Out of Memory" (OOM)
           ./gradlew assembleRelease \
-            -Porg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m" \
+            -Porg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=512m" \
             -PstoreFile=release.jks \
             -PstorePassword=$SIGNING_KEY_PASSWORD \
             -PkeyAlias=$SIGNING_KEY_ALIAS \
             -PkeyPassword=$SIGNING_KEY_PASSWORD
-            
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: Android/app/build/outputs/apk/release/*.apk
+          
