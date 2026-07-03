@@ -16,6 +16,16 @@ jobs:
           fetch-depth: 0
           submodules: 'recursive'
 
+      - name: Free up disk space
+        run: |
+          # Liberamos unos 10-15GB de espacio borrando software precargado innecesario
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo rm -rf /usr/local/lib/android/sdk/ndk-bundle
+          df -h
+
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
@@ -31,19 +41,18 @@ jobs:
           # 1. Buscar automáticamente la carpeta donde vive gradlew
           GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
           if [ -z "$GRADLEW_PATH" ]; then
-            echo "¡ERROR! No se encontró el archivo gradlew en el repositorio."
+            echo "¡ERROR! No se encontró el archivo gradlew."
             exit 1
           fi
           
           PROJECT_DIR=$(dirname "$GRADLEW_PATH")
-          echo "Compilando en: $PROJECT_DIR"
           cd "$PROJECT_DIR"
           
           # 2. Preparar el Keystore
           echo "$SIGNING_KEYSTORE_B64" | base64 -d > release.jks
           
           # 3. Compilación limpia y controlada
-          # Se desactiva el modo paralelo para ahorrar RAM y se fuerza un limite de 2GB
+          # Se desactiva el modo paralelo para ahorrar RAM y se fuerza un límite de 2GB
           chmod +x gradlew
           ./gradlew clean assembleRelease \
             -Porg.gradle.parallel=false \
@@ -58,6 +67,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
-          # Buscamos el APK en cualquier subcarpeta de build/outputs
           path: "**/build/outputs/apk/release/*.apk"
           
