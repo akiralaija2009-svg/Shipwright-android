@@ -27,14 +27,20 @@ jobs:
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
         run: |
-          # 1. Decodificar keystore
+          # 1. Preparar keystore
           echo "$SIGNING_KEYSTORE_B64" | base64 -d > release.jks
           
-          # 2. Compilar con límite de memoria estricto
-          # -Xmx3g significa que Java no pasará de 3GB de RAM.
+          # 2. Configuración de permisos
           chmod +x gradlew
-          ./gradlew assembleRelease \
-            -Porg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=512m" \
+          
+          # 3. Compilación limpia y secuencial (sin paralelismo para ahorrar RAM)
+          # -Porg.gradle.parallel=false : Evita picos de memoria.
+          # --no-daemon : Obliga a iniciar un proceso nuevo, más estable.
+          # -Xmx2g : Límite estricto de 2GB de RAM para Java.
+          ./gradlew clean assembleRelease \
+            -Porg.gradle.parallel=false \
+            -Porg.gradle.jvmargs="-Xmx2g -XX:MaxMetaspaceSize=512m" \
+            --no-daemon \
             -PstoreFile=release.jks \
             -PstorePassword=$SIGNING_KEY_PASSWORD \
             -PkeyAlias=$SIGNING_KEY_ALIAS \
