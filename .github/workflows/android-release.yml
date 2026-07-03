@@ -10,21 +10,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: 'recursive'
 
+      # PASO CRÍTICO: Sin esto, obtendrás el error "No space left on device"
       - name: Free up disk space
         run: |
-          # Liberamos unos 10-15GB de espacio borrando software precargado innecesario
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /opt/ghc
           sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           sudo rm -rf /usr/local/lib/android/sdk/ndk-bundle
-          df -h
 
       - name: Set up JDK
         uses: actions/setup-java@v3
@@ -32,36 +31,30 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build Android Release
+      - name: Build release APK
         env:
-          SIGNING_KEYSTORE_B64: ${{ secrets.SIGNING_KEYSTORE_B64 }}
+          GIT_TAG: ${{ github.ref_name }}
+          CFLAGS: "-Wno-error=missing-braces"
+          CXXFLAGS: "-Wno-error=missing-braces"
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
         run: |
-          # 1. Buscar automáticamente la carpeta donde vive gradlew
           GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
-          if [ -z "$GRADLEW_PATH" ]; then
-            echo "¡ERROR! No se encontró el archivo gradlew."
-            exit 1
-          fi
-          
-          PROJECT_DIR=$(dirname "$GRADLEW_PATH")
-          cd "$PROJECT_DIR"
-          
-          # 2. Preparar el Keystore
-          echo "$SIGNING_KEYSTORE_B64" | base64 -d > release.jks
-          
-          # 3. Compilación limpia y controlada
-          # Se desactiva el modo paralelo para ahorrar RAM y se fuerza un límite de 2GB
+          GRADLEW_DIR=$(dirname "$GRADLEW_PATH")
+          cd "$GRADLEW_DIR"
           chmod +x gradlew
-          ./gradlew clean assembleRelease \
-            -Porg.gradle.parallel=false \
-            -Porg.gradle.jvmargs="-Xmx2g -XX:MaxMetaspaceSize=512m" \
-            --no-daemon \
-            -PstoreFile=release.jks \
-            -PstorePassword=$SIGNING_KEY_PASSWORD \
-            -PkeyAlias=$SIGNING_KEY_ALIAS \
-            -PkeyPassword=$SIGNING_KEY_PASSWORD
+          rm -f local.properties
+          
+          # He añadido los parámetros de memoria a tu lógica para evitar el OutOfMemoryError
+          ./gradlew assembleRelease \
+          -Porg.gradle.jvmargs="-Xmx2g -XX:MaxMetaspaceSize=512m" \
+          --no-daemon \
+          -PstoreFile=release.jks \
+          -PstorePassword=$SIGNING_KEY_PASSWORD \
+          -PkeyAlias=$SIGNING_KEY_ALIAS \
+          -PkeyPassword=$SIGNING_KEY_PASSWORD
+          
+          cd $GITHUB_WORKSPACE
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
