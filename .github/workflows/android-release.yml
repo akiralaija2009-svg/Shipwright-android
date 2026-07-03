@@ -50,6 +50,7 @@ jobs:
           GRADLEW_DIR=$(dirname "$GRADLEW_PATH")
           cd "$GRADLEW_DIR"
           chmod +x gradlew
+          rm -f local.properties
           ./gradlew assembleRelease \
           -PstoreFile=release.jks \
           -PstorePassword=${{ secrets.SIGNING_KEY_PASSWORD }} \
