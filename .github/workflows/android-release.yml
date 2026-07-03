@@ -16,13 +16,6 @@ jobs:
           fetch-depth: 0
           submodules: 'recursive'
 
-      - name: Create Swap Space
-        run: |
-          sudo fallocate -l 8G /swapfile
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
-
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
