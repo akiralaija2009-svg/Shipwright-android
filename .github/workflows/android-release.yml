@@ -16,6 +16,13 @@ jobs:
           fetch-depth: 0
           submodules: 'recursive'
 
+      - name: Create Swap Space
+        run: |
+          sudo fallocate -l 8G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
@@ -45,6 +52,8 @@ jobs:
       - name: Build release APK
         env:
           GIT_TAG: ${{ github.ref_name }}
+          CFLAGS: "-Wno-error=missing-braces"
+          CXXFLAGS: "-Wno-error=missing-braces"
         run: |
           GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
           GRADLEW_DIR=$(dirname "$GRADLEW_PATH")
