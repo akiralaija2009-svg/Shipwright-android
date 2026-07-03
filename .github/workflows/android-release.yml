@@ -5,13 +5,15 @@ on:
   push:
     branches:
       - '*'
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-      
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'recursive'
 
       - name: Set up JDK
         uses: actions/setup-java@v3
@@ -40,9 +42,9 @@ jobs:
           echo '${{ secrets.SIGNING_KEYSTORE_B64 }}' | base64 -d > Android/app/release.jks
 
       - name: Build release APK
-      env:
+        env:
         GIT_TAG: ${{ github.ref_name }}
-      run: |
+    run: |
         GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
         GRADLEW_DIR=$(dirname "$GRADLEW_PATH")
         cd "$GRADLEW_DIR"
@@ -55,7 +57,7 @@ jobs:
         cd $GITHUB_WORKSPACE
         
       - name: Rename APK
-      run: |
+    run: |
         APK=$(find Android/app/build/outputs/apk/release -name 'soh_release_*.apk' | head -n 1)
         mv "$APK" "soh-${{ github.ref_name }}.apk"
         
